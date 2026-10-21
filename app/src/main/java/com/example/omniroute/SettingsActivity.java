@@ -3,7 +3,6 @@ package com.example.omniroute;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Insets;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -15,6 +14,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 import java.io.File;
 import java.util.concurrent.ExecutorService;
@@ -36,6 +36,7 @@ public final class SettingsActivity extends Activity {
     private Switch listenAllSwitch;
     private Switch bootSwitch;
     private Switch crashSwitch;
+    private Switch watchdogSwitch;
     private Switch desktopSwitch;
     private Switch ballSwitch;
 
@@ -62,6 +63,7 @@ public final class SettingsActivity extends Activity {
         listenAllSwitch = findViewById(R.id.switch_listen_all);
         bootSwitch = findViewById(R.id.switch_boot);
         crashSwitch = findViewById(R.id.switch_crash);
+        watchdogSwitch = findViewById(R.id.switch_watchdog);
         desktopSwitch = findViewById(R.id.switch_desktop);
         ballSwitch = findViewById(R.id.switch_ball);
 
@@ -109,6 +111,7 @@ public final class SettingsActivity extends Activity {
         listenAllSwitch.setChecked(AppSettings.listenAll(this));
         bootSwitch.setChecked(AppSettings.startOnBoot(this));
         crashSwitch.setChecked(AppSettings.restartOnCrash(this));
+        watchdogSwitch.setChecked(KeepAlive.isEnabled(this));
         desktopSwitch.setChecked(AppSettings.desktopMode(this));
         ballSwitch.setChecked(AppSettings.showFloatingBall(this));
         ballSizeInput.setText(String.valueOf(AppSettings.ballSizeDp(this)));
@@ -133,8 +136,15 @@ public final class SettingsActivity extends Activity {
                 AppSettings.setStartOnBoot(this, isChecked));
         crashSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
                 AppSettings.setRestartOnCrash(this, isChecked));
+        watchdogSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            KeepAlive.setEnabled(this, isChecked);
+            // Arm or cancel the alarm right away rather than waiting for the
+            // next service start, so the switch reflects reality at once.
+            KeepAlive.sync(this);
+        });
 
         bindDisplayOptions();
+        updateBatteryState();
     }
 
     /** Display options apply immediately when returning to the main screen. */
@@ -191,6 +201,10 @@ public final class SettingsActivity extends Activity {
         super.onResume();
         // Entries may have been added or removed on the list screens.
         updateCredentialCounts();
+        // The battery exemption can be granted or revoked in system settings
+        // while this screen is in the background, so the state is re-read on
+        // every resume rather than only once at creation.
+        updateBatteryState();
     }
 
     private interface IntConsumer {
@@ -430,16 +444,61 @@ public final class SettingsActivity extends Activity {
      * alive on aggressive OEM builds; the settings screen as a fallback covers
      * devices that refuse the direct request.
      */
+    /**
+     * Asks the system to exempt the app from battery optimisation.
+     *
+     * <p>The result is not knowable at the moment the request is made, so the
+     * screen refreshes its battery state when it comes back to the
+     * foreground instead of assuming the request worked.
+     */
     private void requestIgnoreBatteryOptimizations() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+        Intent intent = BatteryStatus.exemptionRequestIntent(this);
+        if (intent == null) {
+            // Below Android 6 there is nothing to request; the state is
+            // already as good as it gets.
+            Toast.makeText(this, R.string.settings_battery_state_unavailable,
+                    Toast.LENGTH_SHORT).show();
             return;
         }
-        Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-        intent.setData(Uri.parse("package:" + getPackageName()));
         try {
             startActivity(intent);
-        } catch (Exception ignored) {
-            startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
+        } catch (Exception failure) {
+            // Some OEM builds ship without a handler for the direct request.
+            // Fall back to the generic list so the user can still pick the
+            // app by hand.
+            try {
+                startActivity(BatteryStatus.exemptionSettingsIntent());
+            } catch (Exception secondFailure) {
+                Toast.makeText(this, R.string.settings_battery_request_failed,
+                        Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    /**
+     * Shows whether the app is exempt from battery optimisation.
+     *
+     * <p>Previously the row showed a fixed hint and nothing else, so a
+     * denied or ignored request looked exactly like a granted one. The state
+     * badge and the hint now both reflect the real answer.
+     */
+    private void updateBatteryState() {
+        TextView state = findViewById(R.id.battery_state);
+        TextView hint = findViewById(R.id.battery_hint);
+        if (!BatteryStatus.canRequestExemption(this)) {
+            state.setText(R.string.settings_battery_state_unavailable);
+            state.setTextColor(getColor(R.color.idle));
+            hint.setText(R.string.settings_battery_hint_unavailable);
+            return;
+        }
+        if (BatteryStatus.isExempt(this)) {
+            state.setText(R.string.settings_battery_state_exempt);
+            state.setTextColor(getColor(R.color.ok));
+            hint.setText(R.string.settings_battery_hint_exempt);
+        } else {
+            state.setText(R.string.settings_battery_state_not_exempt);
+            state.setTextColor(getColor(R.color.warn));
+            hint.setText(R.string.settings_battery_hint_not_exempt);
         }
     }
 

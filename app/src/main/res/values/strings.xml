@@ -46,9 +46,19 @@
     <string name="settings_ball_size_saved">悬浮球大小已设为 %1$d dp</string>
     <string name="settings_ball_size_invalid">大小需在 %1$d ~ %2$d dp 之间</string>
     <string name="settings_boot_title">开机自动启动</string>
-    <string name="settings_boot_hint">部分厂商系统会拦截开机启动，需要手动允许自启动权限</string>
+    <string name="settings_boot_hint">设备重启后自动拉起服务。厂商系统可能额外拦截自启动，需在系统设置中手动允许</string>
     <string name="settings_crash_title">崩溃后自动重启</string>
-    <string name="settings_crash_hint">服务意外退出时由后台任务拉起</string>
+    <string name="settings_crash_hint">服务意外退出时，进程内监督线程在约 15 秒内尝试拉起</string>
+    <string name="settings_watchdog_title">后台看门狗</string>
+    <string name="settings_watchdog_hint">进程被系统杀掉后由系统定时闹钟拉起，覆盖清后台、内存回收等场景</string>
+
+    <string name="settings_battery_state_exempt">已豁免</string>
+    <string name="settings_battery_state_not_exempt">未豁免</string>
+    <string name="settings_battery_state_unavailable">不适用</string>
+    <string name="settings_battery_hint_exempt">已忽略电池优化，系统不会在后台限制本应用</string>
+    <string name="settings_battery_hint_not_exempt">未忽略电池优化，系统可能在后台限制本应用，点击申请豁免</string>
+    <string name="settings_battery_hint_unavailable">当前系统版本不支持电池优化设置，无需配置</string>
+    <string name="settings_battery_request_failed">系统未处理电池优化申请，请到系统设置中手动允许</string>
 
     <string name="settings_section_memory">内存</string>
     <string name="settings_section_tools">工具</string>
@@ -78,7 +88,7 @@
     <string name="settings_export_title">导出数据备份</string>
     <string name="settings_export_hint">把配置、API 密钥和数据库打包成一个 zip</string>
     <string name="settings_battery_title">忽略电池优化</string>
-    <string name="settings_battery_hint">防止系统在后台杀掉服务进程</string>
+    <string name="settings_battery_hint">让系统不在深度休眠时限制本应用，仍可能因内存不足被回收</string>
     <string name="settings_logs_title">查看日志</string>
     <string name="settings_logs_hint">服务启动与运行时的输出</string>
     <string name="settings_reset_password_title">重置仪表盘密码</string>

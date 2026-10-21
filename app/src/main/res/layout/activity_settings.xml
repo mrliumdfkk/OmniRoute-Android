@@ -386,6 +386,39 @@
                             android:minWidth="48dp"
                             android:minHeight="32dp" />
                     </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/stroke" />
+
+                    <LinearLayout
+                        style="@style/SettingsRow"
+                        android:paddingBottom="0dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/SettingsRowTitle"
+                                android:text="@string/settings_watchdog_title" />
+
+                            <TextView
+                                style="@style/SettingsRowHint"
+                                android:text="@string/settings_watchdog_hint" />
+                        </LinearLayout>
+
+                        <Switch
+                            android:id="@+id/switch_watchdog"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:minWidth="48dp"
+                            android:minHeight="32dp" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <!-- ===== 内存 ===== -->
@@ -658,9 +691,15 @@
                                 android:text="@string/settings_battery_title" />
 
                             <TextView
+                                android:id="@+id/battery_hint"
                                 style="@style/SettingsRowHint"
                                 android:text="@string/settings_battery_hint" />
                         </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/battery_state"
+                            style="@style/SettingsRowTitle"
+                            android:layout_marginStart="12dp" />
                     </LinearLayout>
 
                     <View

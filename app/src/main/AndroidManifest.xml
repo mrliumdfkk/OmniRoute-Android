@@ -6,6 +6,14 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- The watchdog uses an alarm-clock-class alarm so it still fires while
+         the device is in Doze. Android 12+ requires SCHEDULE_EXACT_ALARM for
+         that on apps targeting 31 or later; the app degrades to an inexact
+         alarm when the user has not granted it.
+         USE_EXACT_ALARM is deliberately NOT requested: it is auto-granted but
+         Play only accepts it for alarm-clock and calendar apps, and this is a
+         local gateway, so asking for it would only risk a rejection. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <!-- Android 11+ 包可见性：未声明则无法用隐式 Intent 打开浏览器或文件选择器 -->
     <queries>
@@ -101,10 +109,32 @@
 
         <receiver
             android:name=".BootReceiver"
+            android:directBootAware="true"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- Fires earlier, while the device is still encrypted. The
+                     receiver tolerates this and defers the real work, but
+                     registering it means the system wakes the app for the
+                     boot broadcast instead of skipping it entirely.
+                     directBootAware is required for this action to be
+                     delivered at all; the receiver checks whether the
+                     credential-encrypted storage is unlocked before it
+                     touches any of it. -->
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Receives the cross-process watchdog alarm and restarts the
+             gateway after the app process was killed. -->
+        <receiver
+            android:name=".KeepAliveReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.omniroute.action.WATCHDOG" />
             </intent-filter>
         </receiver>
     </application>
