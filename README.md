@@ -138,3 +138,65 @@ wired to a button yet — call it after stopping the service.
 - The rootfs asset is shipped uncompressed inside the APK and is excluded from
   Android auto-backup; `minifyEnabled` stays off because the wrapper is a thin
   shell that R8 gains little from.
+
+
+## Building the APK
+
+The release build is signed with a key that is **not** part of this repository.
+`release.keystore` and `signing.properties` are git-ignored; supply your own:
+
+```bash
+keytool -genkeypair -v -keystore release.keystore -alias omniroute \
+        -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Then describe the key in `signing.properties`:
+
+```properties
+storeFile=release.keystore
+storePassword=...
+keyAlias=omniroute
+keyPassword=...
+```
+
+`local.properties` must point at your SDK, and is also git-ignored:
+
+```properties
+sdk.dir=/path/to/android-sdk
+```
+
+With those in place:
+
+```bash
+gradle assembleRelease --no-daemon
+```
+
+The output is `app/build/outputs/apk/release/app-release.apk`. Without a
+`signing.properties` file the release variant falls back to the debug
+keystore, which is fine for local testing but not for distribution.
+
+## OAuth authorization flows
+
+The provider list in the OAuth screen is generated from a single `PRESETS`
+array in `OAuthConfig.java`, so adding a provider is a one-line change.
+
+The transport used for a provider is **not** decided on the Android side. The
+runtime reports a `flowType` when `/api/oauth/{provider}/authorize` is called,
+and the app dispatches on that value:
+
+| `flowType` | What the app does |
+| --- | --- |
+| `device_code` | Shows the user code and verification URI, then polls `/api/oauth/{provider}/poll` |
+| `authorization_code_pkce` | Opens the authorization URL and waits for the redirect |
+| `authorization_code` | Opens the authorization URL and waits for the redirect |
+| `callback_server` | Lets the runtime host the callback and asks it for the result |
+| `import` | Shows the token import form |
+
+Providers that report "not configured", "experimental feature disabled", or
+"import only" surface as an explicit error instead of silently falling back to
+a different flow. The preset entry is a hint for the user, not the source of
+truth — the runtime's `flowType` always wins.
+
+Authorization codes, PKCE verifiers, and client credentials stay inside the
+rootfs gateway. The Android app only starts the flow, receives the callback,
+and shows status.
