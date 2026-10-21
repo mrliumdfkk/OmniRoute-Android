@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Round indicator whose tint is applied at runtime (running = green, otherwise
+  red). A flat oval keeps the shape independent of the color so the breathing
+  animation only has to drive alpha.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/idle" />
+</shape>

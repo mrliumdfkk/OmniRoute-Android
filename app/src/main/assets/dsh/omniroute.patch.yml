@@ -1,0 +1,24 @@
+# dsh → OmniRoute 桥接 patch
+# ------------------------------------------------------------------
+# 作用：把 dsh 的 DeepSeek Messages provider 指向本地 OmniRoute 网关，
+#       让 dsh 的 agent 经由 OmniRoute 的免费 provider 池出结果，
+#       无需任何真实上游 API key。
+#
+# 设计决策：
+#   - 不在此处写死 baseURL。OmniRoute 的监听端口由 omniroute-android
+#     的 AppSettings 管理（用户可在设置页改），启动脚本 start-dsh.sh
+#     从该端口拼出 http://127.0.0.1:$PORT 注入 DEEPSEEK_BASE_URL 环境
+#     变量。dsh 的 resolveAdapterOptions() 优先级为
+#     config.baseURL ?? $DEEPSEEK_BASE_URL ?? PUBLIC_BASE_URL，
+#     所以不在 patch 里设 baseURL 即可让它回退到环境变量。
+#     用户改 OmniRoute 端口后只需重启，patch 永远不用改。
+#
+#   - model 设为 "auto" 而非 dsh 默认的 "deepseek-flash"。
+#     OmniRoute 把 model 名当 provider 路由键：deepseek-flash 会被
+#     解析为 provider "deepseek"，因无凭据返回 401；"auto" 走 OmniRoute
+#     智能路由到 keyless free provider（grok / OpenCode Free …）。
+#     实测：model=auto → 200，model=deepseek-flash → 401。
+- id: agent-default-model
+  config:
+    provider: deepseek-official
+    model: auto

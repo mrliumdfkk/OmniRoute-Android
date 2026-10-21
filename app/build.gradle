@@ -1,0 +1,88 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.example.omniroute"
+    compileSdk 36
+    buildToolsVersion "36.0.0"
+
+    defaultConfig {
+        applicationId "com.example.omniroute"
+        minSdk 24
+        // No targetSdk restriction is needed: proot ships its own loader as a
+        // real file (libproot_loader.so) referenced through PROOT_LOADER, so it
+        // never needs an anonymous PROT_EXEC mapping. That is what Android's
+        // W^X policy blocks, and it is why RikkaHub runs proot at targetSdk 37.
+        targetSdk 37
+        versionCode 15
+        versionName "0.4.1"
+        resourceConfigurations += ["en"]
+    }
+
+    def releaseKeystore = rootProject.file("release.keystore")
+    def signingProps = new Properties()
+    def signingPropsFile = rootProject.file("signing.properties")
+    if (signingPropsFile.isFile()) {
+        signingPropsFile.withInputStream { signingProps.load(it) }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            lint {
+                checkReleaseBuilds false
+                abortOnError false
+            }
+            if (releaseKeystore.isFile()
+                    && signingProps.getProperty("RELEASE_STORE_PASSWORD")
+                    && signingProps.getProperty("RELEASE_KEY_PASSWORD")) {
+                signingConfig signingConfigs.create("release") {
+                    storeFile releaseKeystore
+                    storePassword signingProps.getProperty("RELEASE_STORE_PASSWORD")
+                    keyAlias signingProps.getProperty("RELEASE_KEY_ALIAS") ?: "omniroute"
+                    keyPassword signingProps.getProperty("RELEASE_KEY_PASSWORD")
+                    enableV1Signing true
+                    enableV2Signing true
+                }
+            }
+        }
+        debug {
+            applicationIdSuffix ".debug"
+            signingConfig signingConfigs.getByName("debug")
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        // The rootfs is no longer baked into the APK: a trimmed archive cost
+        // hundreds of megabytes and still lacked the optional dependencies that
+        // make several providers work. The runtime now always comes from
+        // ImportActivity, so the assets tree stays empty and nothing is
+        // packaged from it. An archive dropped into src/main/assets/rootfs is
+        // still picked up by the assets-install fallback in RootfsInstaller.
+        main.assets.srcDirs = ["src/main/assets"]
+        main.jniLibs.srcDirs = ["src/main/jniLibs"]
+    }
+
+    // libproot_exec.so and libproot_loader.so are plain Linux ELFs used via
+    // ProcessBuilder, not JNI libraries. AGP's default useLegacyPackaging=false
+    // keeps native libs zipped inside the APK, leaving nativeLibraryDir empty at
+    // runtime, so they must be extracted on install to be exec'able.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
+    androidResources {
+        // The rootfs is a gzip stream stored as ".bundle"; aapt2 must neither
+        // strip the suffix nor re-deflate it (deflate wrapping would make
+        // AssetManager transparently un-wrap it and change byte counts).
+        noCompress += ["gz", "bundle"]
+    }
+}

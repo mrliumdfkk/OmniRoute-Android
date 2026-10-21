@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <exclude domain="file" path="rootfs/" />
+    <exclude domain="file" path="rootfs-staging/" />
+    <exclude domain="file" path="rootfs-download.tar.gz" />
+    <include domain="file" path="omniroute-data/" />
+</full-backup-content>

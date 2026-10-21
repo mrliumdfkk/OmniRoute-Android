@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Surfaces -->
+    <color name="bg">#0B0F1A</color>
+    <color name="surface">#121826</color>
+    <color name="surface_high">#1A2233</color>
+    <color name="stroke">#232C40</color>
+
+    <!-- Text -->
+    <color name="text_primary">#E8EDF5</color>
+    <color name="text_secondary">#8B97AD</color>
+
+    <!-- Accent (matches the OmniRoute app icon gradient) -->
+    <color name="accent">#E54D5E</color>
+    <color name="accent_dim">#8E2F3B</color>
+    <color name="accent_soft">#33E54D5E</color>
+
+    <!-- Status -->
+    <color name="ok">#3FB950</color>
+    <color name="warn">#D29922</color>
+    <color name="error">#F85149</color>
+    <color name="idle">#6E7681</color>
+</resources>

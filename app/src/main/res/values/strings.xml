@@ -1,0 +1,198 @@
+<resources>
+    <string name="app_name">OmniRoute</string>
+
+    <string name="action_restart">重启服务</string>
+    <string name="action_open">外部打开</string>
+
+    <string name="state_stopped">已停止</string>
+    <string name="state_starting">启动中</string>
+    <string name="state_running">运行中</string>
+    <string name="state_error">启动失败</string>
+    <string name="open_failed">没有可打开浏览器的应用</string>
+
+    <string name="action_settings">设置</string>
+
+    <string name="settings_title">设置</string>
+    <string name="settings_back">返回</string>
+
+    <string name="settings_section_server">服务</string>
+    <string name="settings_endpoint_title">访问地址</string>
+    <string name="settings_endpoint_value">http://127.0.0.1:%1$d</string>
+    <string name="settings_endpoint_hint">把这个地址填进 IDE 或 API 客户端的 Base URL，后缀加 /v1</string>
+    <string name="settings_runtime_title">运行时版本</string>
+    <string name="settings_runtime_none">未安装</string>
+    <string name="settings_port_title">监听端口</string>
+    <string name="settings_port_hint">%1$d ~ %2$d，改后需重启服务</string>
+    <string name="settings_port_invalid">端口需在 %1$d ~ %2$d 之间</string>
+    <string name="settings_port_saved">端口已设为 %1$d，重启服务后生效</string>
+
+    <string name="settings_listen_all_title">允许局域网访问</string>
+    <string name="settings_listen_all_hint">关闭时仅本机可访问。开启后同一 Wi-Fi 下的设备可用，建议先设置强密码</string>
+
+    <string name="settings_section_startup">启动与保活</string>
+    <string name="settings_section_display">显示</string>
+
+    <string name="settings_desktop_title">桌面版布局</string>
+    <string name="settings_desktop_hint">开启后使用宽屏排版（侧边栏常驻），关闭则用手机紧凑排版</string>
+
+    <string name="settings_font_scale_title">网页字体缩放</string>
+    <string name="settings_font_scale_hint">%1$d ~ %2$d%%，100%% 为原始大小</string>
+    <string name="settings_font_scale_saved">字体缩放已设为 %1$d%%</string>
+
+    <string name="settings_ball_title">悬浮球</string>
+    <string name="settings_ball_hint">上下滑动可回到首页或刷新当前页，左右滑动可前进后退，长按拖动可移动位置</string>
+    <string name="settings_ball_size_title">悬浮球大小</string>
+    <string name="settings_ball_size_hint">%1$d ~ %2$d dp</string>
+    <string name="settings_ball_size_saved">悬浮球大小已设为 %1$d dp</string>
+    <string name="settings_ball_size_invalid">大小需在 %1$d ~ %2$d dp 之间</string>
+    <string name="settings_boot_title">开机自动启动</string>
+    <string name="settings_boot_hint">部分厂商系统会拦截开机启动，需要手动允许自启动权限</string>
+    <string name="settings_crash_title">崩溃后自动重启</string>
+    <string name="settings_crash_hint">服务意外退出时由后台任务拉起</string>
+
+    <string name="settings_section_memory">内存</string>
+    <string name="settings_section_tools">工具</string>
+    <string name="settings_section_credentials">凭据</string>
+
+    <string name="settings_client_keys_title">API 密钥</string>
+    <string name="settings_client_keys_hint">在 OmniRoute 面板里创建、给客户端（IDE 插件、其他 App）使用的密钥</string>
+    <string name="settings_providers_title">Provider 凭据</string>
+    <string name="settings_providers_hint">上游提供商的名称、地址和密钥，存这里方便随时查找复制</string>
+
+    <string name="cred_name_hint">名称（备注）</string>
+    <string name="cred_url_hint">地址（Base URL）</string>
+    <string name="cred_secret_hint_key">API 密钥</string>
+    <string name="cred_secret_hint_provider">API Key</string>
+    <string name="cred_add">添加</string>
+    <string name="cred_delete">删除</string>
+    <string name="cred_delete_confirm">确定删除「%1$s」？</string>
+    <string name="cred_unnamed">未命名</string>
+    <string name="cred_show">显示</string>
+    <string name="cred_hide">隐藏</string>
+    <string name="cred_copied">已复制到剪贴板</string>
+    <string name="cred_copy_hint">点击密钥可复制，右侧眼睛图标显示/隐藏</string>
+    <string name="cred_secret_required">密钥不能为空</string>
+    <string name="cred_empty_keys">还没有保存密钥。点右上角 + 添加。</string>
+    <string name="cred_empty_providers">还没有保存 Provider。点右上角 + 添加。</string>
+
+    <string name="settings_export_title">导出数据备份</string>
+    <string name="settings_export_hint">把配置、API 密钥和数据库打包成一个 zip</string>
+    <string name="settings_battery_title">忽略电池优化</string>
+    <string name="settings_battery_hint">防止系统在后台杀掉服务进程</string>
+    <string name="settings_logs_title">查看日志</string>
+    <string name="settings_logs_hint">服务启动与运行时的输出</string>
+    <string name="settings_reset_password_title">重置仪表盘密码</string>
+    <string name="settings_reset_password_hint">忘记面板密码时使用：清掉已保存的密码，重启后改用初始密码</string>
+    <string name="settings_reset_password_confirm">将删除 data/settings.json（已自动备份），并把仪表盘密码恢复为初始值。\n\nProvider 配置与 API 密钥存在数据库里，不受影响。\n\n删除后会自动重启服务，之后用初始密码登录即可。是否继续？</string>
+    <string name="settings_reset_password_do">重置并重启</string>
+    <string name="settings_reset_password_none">没有已保存的密码，无需重置；当前使用的是初始密码</string>
+    <string name="settings_reset_password_done">已重置，重启后用初始密码登录：%1$s</string>
+    <string name="settings_reset_password_failed">重置失败：%1$s</string>
+    <string name="settings_logs_empty">暂无日志</string>
+    <string name="settings_logs_token_found">检测到一次性引导令牌（已复制到剪贴板），粘贴到仪表盘向导即可继续：</string>
+    <string name="settings_logs_token_copied">引导令牌已复制</string>
+    <string name="settings_heap_title">Node 内存上限</string>
+    <string name="settings_heap_hint">%1$d ~ %2$d MB。设太大容易被系统杀掉，设太小会内存不足</string>
+    <string name="settings_heap_saved">内存上限已设为 %1$d MB，重启服务后生效</string>
+
+    <string name="settings_restart_needed">设置已保存，重启服务后生效</string>
+    <string name="settings_restart_now">立即重启服务</string>
+
+<!-- OAuth -->
+    <string name="settings_section_oauth">OAuth</string>
+    <string name="settings_oauth_title">OAuth 授权</string>
+    <string name="settings_oauth_hint">通过浏览器登录上游，把令牌存为 Provider 凭据</string>
+
+    <string name="oauth_title">OAuth 授权</string>
+    <string name="oauth_back">返回</string>
+    <string name="oauth_presets">预设</string>
+    <string name="oauth_custom">自定义</string>
+    <string name="oauth_presets_hint">一键登录：内置 Provider 由运行时完成授权与落库，无需填写任何参数。</string>
+    <string name="oauth_custom_hint">「自定义」为高级用法：仅当运行时不支持你的 Provider 时，才需要手填授权端点、Client ID 与回调地址。</string>
+    <string name="oauth_section_config">授权配置</string>
+    <string name="oauth_section_options">选项</string>
+
+    <string name="oauth_authorize_url">授权端点 Authorize URL</string>
+    <string name="oauth_token_url">令牌端点 Token URL（用于用 code 换取令牌）</string>
+    <string name="oauth_client_id">Client ID</string>
+    <string name="oauth_client_secret">Client Secret（可选）</string>
+    <string name="oauth_scopes">Scopes（空格分隔）</string>
+    <string name="oauth_redirect_uri">回调 Redirect URI</string>
+    <string name="oauth_redirect_hint">需在供应商后台登记同样的回调地址；默认用本 App 的 omniroute-oauth:// 方案</string>
+    <string name="oauth_api_base">API Base URL（保存为 Provider 地址）</string>
+
+    <string name="oauth_pkce_title">使用 PKCE (S256)</string>
+    <string name="oauth_pkce_hint">Anthropic / Google 等公开客户端必需</string>
+    <string name="oauth_external_title">用外部浏览器打开授权页</string>
+    <string name="oauth_external_hint">Google 等会拦截内嵌 WebView，建议开启</string>
+    <string name="oauth_save_title">完成后保存为 Provider 凭据</string>
+    <string name="oauth_save_hint">把 access_token 存到 Provider 列表，可在面板里粘贴使用</string>
+
+    <string name="oauth_start">开始授权</string>
+    <string name="oauth_preset_applied">已套用预设：%1$s</string>
+    <string name="oauth_status_starting">正在打开授权页…</string>
+    <string name="oauth_status_zed_listening">正在监听本机端口 %1$d，请在浏览器中完成 Zed 登录…</string>
+    <string name="oauth_zed_need_runtime">无法连接运行时，Zed 原生签名需要运行时生成公钥，请先启动服务后重试</string>
+    <string name="oauth_status_probing">正在向运行时确认授权方式…</string>
+    <string name="oauth_status_external">请在浏览器中完成授权，完成后会自动返回</string>
+    <string name="oauth_status_exchanging">正在换取令牌…</string>
+    <string name="oauth_success">已保存 OAuth 令牌</string>
+    <string name="oauth_failed">授权失败：%1$s</string>
+    <string name="oauth_missing">请填写授权端点和 Client ID</string>
+    <string name="oauth_no_token_url">未配置 Token URL，无法用授权码换取令牌</string>
+    <string name="oauth_no_code">回调中没有 code 或 access_token</string>
+    <string name="oauth_state_mismatch">state 不匹配，已拒绝</string>
+    <string name="oauth_status_requesting_code">正在请求设备授权码…</string>
+    <string name="oauth_device_prompt">在浏览器打开：%2$s\n输入代码：%1$s\n（代码已复制）</string>
+    <string name="oauth_device_copied">已复制授权码：%1$s</string>
+    <string name="oauth_device_success">已连接：%1$s %2$s</string>
+    <string name="oauth_device_expired">设备授权码已过期，请重试</string>
+    <string name="oauth_device_code_failed">请求设备码失败：%1$s</string>
+    <string name="oauth_device_open_browser">已打开验证页面，请在页面中确认授权</string>
+    <string name="oauth_device_open_failed">无法自动打开浏览器，请手动访问：%1$s</string>
+    <string name="oauth_device_waiting">等待授权中…（已复制代码 %1$s）</string>
+    <string name="oauth_device_saved">已保存 Provider 凭据：%1$s</string>
+    <string name="oauth_oneclick_title">一键登录</string>
+    <string name="oauth_oneclick_hint">点选即可开始，运行时会自动完成授权并保存凭据。</string>
+    <string name="oauth_auth_code_hint">此 Provider 需要浏览器确认授权页，Client ID 由运行时自动填充。</string>
+    <string name="oauth_import_title">粘贴已有令牌</string>
+    <string name="oauth_import_hint">%1$s 没有可被本 App 接管的浏览器回调，只能导入你手上已有的令牌；运行时收到后会自行规范化并保存为 Provider 凭据。</string>
+    <string name="oauth_import_blocked">%1$s 当前不可用：%2$s</string>
+    <string name="oauth_manual_key">%1$s 无法通过浏览器授权登录：%2$s</string>
+    <string name="oauth_manual_key_hint">该 Provider 既不支持浏览器 OAuth，也不接受令牌导入。请在 OmniRoute 网页端手动添加凭据后再使用。</string>
+    <string name="oauth_import_redirect_pinned">%1$s 的回调被固定在 %2$s，本 App 无法接收授权码，请改为导入已有令牌。</string>
+    <string name="oauth_import_placeholder">在此粘贴 access token / setup token / auth.json 内容</string>
+    <string name="oauth_import_action">导入并保存凭据</string>
+    <string name="oauth_import_missing">请先粘贴令牌</string>
+    <string name="oauth_import_failed">导入失败：%1$s</string>
+    <string name="oauth_import_success">已导入 Provider 凭据：%1$s</string>
+    <string name="oauth_session_missing">无法建立运行时会话，请确认服务已启动并可用默认密码登录。</string>
+
+    <!-- 导入全量包 -->
+    <string name="settings_section_import">运行时导入</string>
+    <string name="settings_import_title">导入全量包</string>
+    <string name="settings_import_hint">从文件选择器装 .tar.gz 全量 rootfs，恢复被裁剪掉的功能</string>
+
+    <string name="import_title">导入全量包</string>
+    <string name="import_section">当前运行时</string>
+    <string name="import_official_section">官方源</string>
+    <string name="import_official_hint">从官方容器镜像仓库获取完整运行时，包含 Playwright、wreq-js、onnxruntime 等全部可选组件。首次下载约 420 MB（压缩），可断点续传。</string>
+    <string name="import_official_source">来源：%1$s</string>
+    <string name="import_official_download">从官方源下载并安装</string>
+    <string name="import_official_downloading">正在从官方源获取运行时…</string>
+    <string name="import_official_failed">官方源获取失败：%1$s</string>
+    <string name="import_official_done">官方运行时已安装：%1$s，重启服务后生效</string>
+    <string name="import_manual_section">手动导入</string>
+    <string name="import_current_value">已安装：%1$s\n导入包：%2$s</string>
+    <string name="import_none">无</string>
+    <string name="import_idle">选择一个 .tar.gz / .tgz 全量包开始导入</string>
+    <string name="import_pick">选择全量包文件</string>
+    <string name="import_copying">正在拷贝到应用目录…</string>
+    <string name="import_copying_mb">已拷贝 %1$d MB…</string>
+    <string name="import_extracting">正在解包并校验…</string>
+    <string name="import_done">导入完成，重启服务后生效</string>
+    <string name="import_done_password">导入完成，重启服务后生效。
+仪表盘初始密码：%1$s（可在面板中修改）</string>
+    <string name="import_done_toast">全量包已导入，重启服务后生效</string>
+    <string name="import_no_picker">没有可用的文件选择器</string>
+</resources>

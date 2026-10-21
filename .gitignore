@@ -1,0 +1,26 @@
+# Build output
+build/
+.gradle/
+.gradle-tmp/
+*.apk
+*.aab
+
+# Signing material — never commit these.
+# release.keystore is the release signing key; signing.properties holds its
+# passwords. Both are required to produce a release build, but they are
+# secrets: see README.md for how to create your own.
+release.keystore
+signing.properties
+*.jks
+*.keystore
+
+# Local machine paths
+local.properties
+
+# Editor / OS noise
+.idea/
+*.iml
+.DS_Store
+
+# Runtime scratch
+*.log
