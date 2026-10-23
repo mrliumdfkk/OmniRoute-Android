@@ -152,7 +152,13 @@ final class KeepAlive {
      * </ul>
      */
     private static void arm(AlarmManager manager, PendingIntent operation) {
-        long triggerAt = SystemClock.elapsedRealtime() + INTERVAL_MS;
+        // AlarmClockInfo.triggerTime is wall-clock based, like
+        // System.currentTimeMillis(). Passing an elapsedRealtime() value here
+        // (a small number, ~4.5e6) reads as a moment in 1970 — in the past —
+        // so the alarm fires immediately, the receiver re-arms it, and the
+        // "15-minute" watchdog becomes a 5-second restart loop. The clock
+        // base, not the interval, was the bug.
+        long triggerAt = System.currentTimeMillis() + INTERVAL_MS;
         if (exactAlarmsAllowed) {
             try {
                 manager.setAlarmClock(
@@ -169,11 +175,15 @@ final class KeepAlive {
             }
         }
         try {
-            // The inexact repeater does repeat on its own, but re-arming it on
-            // every firing is harmless and keeps the two paths consistent.
+            // This path is ELAPSED_REALTIME_WAKEUP, so its trigger time must
+            // be measured from boot, not from the epoch. Using the wall-clock
+            // value above would schedule it in the past and fire at once.
+            // The repeater re-schedules itself, so the interval is all that
+            // matters; the receiver's extra sync() is harmless because the
+            // PendingIntent is the same and replaces the previous alarm.
             manager.setInexactRepeating(
                     AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                    triggerAt,
+                    SystemClock.elapsedRealtime() + INTERVAL_MS,
                     INTERVAL_MS,
                     operation);
             Log.i(TAG, "cross-process watchdog armed with an inexact alarm");
@@ -213,7 +223,9 @@ final class KeepAlive {
             return;
         }
         PendingIntent operation = pendingIntent(app);
-        long triggerAt = SystemClock.elapsedRealtime() + 2000L;
+        // Wall clock, for the same reason arm() uses it: setAlarmClock reads
+        // its trigger time as a moment in history, not as uptime.
+        long triggerAt = System.currentTimeMillis() + 2000L;
         if (exactAlarmsAllowed) {
             try {
                 // setAlarmClock rather than set(): the task-removed path is
@@ -226,7 +238,10 @@ final class KeepAlive {
             }
         }
         try {
-            manager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, operation);
+            // ELAPSED_REALTIME_WAKEUP is uptime-based, so this fallback must
+            // not reuse the wall-clock triggerAt above.
+            manager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    SystemClock.elapsedRealtime() + 2000L, operation);
         } catch (Exception failure) {
             Log.w(TAG, "could not schedule the immediate watchdog trigger", failure);
         }

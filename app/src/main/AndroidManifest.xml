@@ -39,9 +39,22 @@
         android:extractNativeLibs="true"
         android:fullBackupContent="@xml/backup_rules"
         android:theme="@style/AppTheme">
+        <!-- hardwareAccelerated="false" is a deliberate workaround, not an
+             oversight. This app's own process kept dying with SIGTRAP on the
+             Chrome_InProcGp thread: Chromium's in-process GPU thread failed an
+             internal CHECK while the gateway was serving traffic, which takes
+             the whole app process (and the gateway with it) down. That crash
+             is inside WebView's own native code, so no Java callback can catch
+             it; the fix is to keep the GPU thread out of the render path by
+             rendering the dashboard WebView in software. The dashboard is a
+             local control panel, not a game, so the smoothness cost is small
+             next to losing the gateway. onRenderProcessGone in
+             DashboardWebViewClient stays as a second line of defence for the
+             out-of-process renderer crashes that callback does cover. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:hardwareAccelerated="false"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
             android:resizeableActivity="true"
             android:windowSoftInputMode="adjustResize">
@@ -70,6 +83,7 @@
             android:name=".OAuthActivity"
             android:exported="false"
             android:parentActivityName=".SettingsActivity"
+            android:hardwareAccelerated="false"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
             android:windowSoftInputMode="adjustResize" />
 

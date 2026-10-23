@@ -9,9 +9,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.webkit.CookieManager;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -51,6 +54,7 @@ import java.util.concurrent.Executors;
  * app process is killed while the consent page is open.
  */
 public final class OAuthActivity extends Activity {
+    private static final String TAG = "OmniRoute";
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -85,6 +89,11 @@ public final class OAuthActivity extends Activity {
     private int selectedPreset = 0;
     /** The provider key whose flow is in flight, or {@code null}. */
     private String activeProviderKey;
+    /**
+     * The last authorization URL loaded into the WebView, so a renderer
+     * rebuild can reload the consent page instead of dropping the flow.
+     */
+    private String pendingAuthorizeUrl;
     /** Guards against the redirect being handled twice (WebView + onNewIntent). */
     private boolean completing;
     /**
@@ -468,7 +477,8 @@ public final class OAuthActivity extends Activity {
         configPanel.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
         prepareWebView();
-        webView.loadUrl(authorize.toString());
+        pendingAuthorizeUrl = authorize.toString();
+        webView.loadUrl(pendingAuthorizeUrl);
     }
 
     /**
@@ -1009,6 +1019,49 @@ public final class OAuthActivity extends Activity {
         webView.setBackgroundColor(0xFF0B0F1A);
     }
 
+    /**
+     * Replaces a renderer-dead consent WebView with a fresh one.
+     *
+     * <p>The default (super) behaviour kills the whole app process, which takes
+     * the gateway down with a consent page. Returning true from
+     * {@link ConsentWebViewClient#onRenderProcessGone} routes here instead: the
+     * dead WebView is torn down and a fresh one reloads the authorization URL.
+     *
+     * <p>Reloading is safe: the flow's {@code state} and PKCE verifier stay
+     * pending in {@link OAuthConfig} until a callback actually arrives with
+     * them, so re-rendering the consent page does not consume anything. If the
+     * URL is unknown (crash before the first load), the user is dropped back on
+     * the config panel to start over.
+     */
+    private void rebuildConsentWebView() {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        ViewGroup parent = (ViewGroup) webView.getParent();
+        ViewGroup.LayoutParams params = webView.getLayoutParams();
+        parent.removeView(webView);
+        try {
+            webView.destroy();
+        } catch (Exception ignored) {
+            // A renderer-dead WebView can throw from destroy(); the view is
+            // being discarded either way.
+        }
+        webView = new WebView(this);
+        parent.addView(webView, params);
+        prepareWebView();
+
+        if (pendingAuthorizeUrl != null && !pendingAuthorizeUrl.isEmpty()) {
+            webView.setVisibility(View.VISIBLE);
+            configPanel.setVisibility(View.GONE);
+            status.setText(R.string.oauth_status_starting);
+            webView.loadUrl(pendingAuthorizeUrl);
+        } else {
+            webView.setVisibility(View.GONE);
+            configPanel.setVisibility(View.VISIBLE);
+            status.setText(R.string.oauth_renderer_recovered);
+        }
+    }
+
     private static String desktopUserAgent() {
         return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
                 + "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -1028,6 +1081,27 @@ public final class OAuthActivity extends Activity {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             return handleNavigation(Uri.parse(url));
+        }
+
+        /**
+         * The renderer died; the gateway must not die with it.
+         *
+         * <p>The default (super) behaviour kills the whole app process, which
+         * takes the OmniRoute gateway down together with a consent page. A
+         * Chromium-internal CHECK on the in-process GPU thread (SIGTRAP) is
+         * exactly the crash this guards against. Returning true means the app
+         * handles the death itself: the dead WebView is torn down and a fresh
+         * one reloads the authorization URL, so the user can retry the consent
+         * instead of losing the gateway.
+         */
+        @Override
+        public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+            if (webView != null && webView == view) {
+                Log.w(TAG, "OAuth WebView renderer died (crashed=" + detail.didCrash()
+                        + "); rebuilding it instead of killing the process");
+                rebuildConsentWebView();
+            }
+            return true;
         }
 
         private boolean handleNavigation(Uri uri) {

@@ -200,3 +200,43 @@ truth — the runtime's `flowType` always wins.
 Authorization codes, PKCE verifiers, and client credentials stay inside the
 rootfs gateway. The Android app only starts the flow, receives the callback,
 and shows status.
+
+## Stability fixes in 0.4.3
+
+Two crashes/hazards were found in the field and fixed.
+
+### WebView GPU thread crash (SIGTRAP)
+
+The app process was dying with `signal 5 (SIGTRAP), code 1 (TRAP_BRKPT)` on a
+thread named `Chrome_InProcGp` — Chromium's *in-process* GPU thread, i.e. a
+thread inside `com.example.omniroute` itself, not the sandboxed renderer
+process. It failed an internal `CHECK` and took the whole app — gateway
+included — down with it.
+
+Because that thread lives in the app's own process, `onRenderProcessGone`
+never runs: that callback only fires when the *out-of-process* renderer dies.
+The actual fix is to keep the GPU thread out of the render path, so
+`MainActivity` and `OAuthActivity` now set
+`android:hardwareAccelerated="false"` in the manifest. Both views draw a
+local control panel / consent page, so software rendering costs little.
+
+`onRenderProcessGone` handling is kept in both WebView clients as a second
+line of defence for genuine renderer-process deaths (OOM kills etc.).
+
+### Watchdog firing every 5 seconds instead of every 15 minutes
+
+`KeepAlive.arm()` passed `SystemClock.elapsedRealtime()` (a small number,
+~4.5e6) to `AlarmManager.AlarmClockInfo`, whose `triggerTime` is wall-clock
+based (`System.currentTimeMillis()`, ~1.79e12). The alarm therefore pointed at
+a moment in 1970 — already in the past — so it fired immediately; the receiver
+re-armed it, and the "15-minute" watchdog became a ~5-second restart loop.
+
+The fix is the clock base, not the interval:
+
+- the exact path (`setAlarmClock`) uses `System.currentTimeMillis()`
+- the inexact fallback (`setInexactRepeating` with `ELAPSED_REALTIME_WAKEUP`)
+  keeps `SystemClock.elapsedRealtime()`
+- `triggerNow()` splits the two cases the same way
+
+Verified on device: a single pending `WATCHDOG` alarm with a delta of
+~14.5 minutes instead of a burst of 5-second re-arms.

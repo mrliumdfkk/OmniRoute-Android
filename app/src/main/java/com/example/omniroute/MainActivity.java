@@ -11,10 +11,13 @@ import android.os.Handler;
 import android.os.Looper;
 import android.graphics.Insets;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.webkit.CookieManager;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -29,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public final class MainActivity extends Activity {
+    private static final String TAG = "OmniRoute";
     private static final int REQUEST_NOTIFICATIONS = 1001;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -70,50 +74,8 @@ public final class MainActivity extends Activity {
         openAction = findViewById(R.id.action_open);
         settingsAction = findViewById(R.id.action_settings);
 
-        WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
-        settings.setAllowFileAccess(false);
-        settings.setAllowContentAccess(false);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        configureWebView();
 
-        // The dashboard is a Tailwind layout that switches to a cramped mobile
-        // arrangement below 1024px (sidebar collapses into a drawer, cards stack
-        // and the type scale shrinks). Reporting a desktop viewport keeps the
-        // roomy layout, which is what a phone with a 1080px-wide screen can
-        // actually fit once the viewport is scaled.
-        if (AppSettings.desktopMode(this)) {
-            settings.setUseWideViewPort(true);
-            settings.setLoadWithOverviewMode(true);
-            settings.setUserAgentString(desktopUserAgent(settings.getUserAgentString()));
-        } else {
-            settings.setUseWideViewPort(false);
-            settings.setLoadWithOverviewMode(false);
-        }
-        settings.setSupportZoom(true);
-        settings.setBuiltInZoomControls(true);
-        // Hiding the zoom buttons keeps the overlay from covering the dashboard;
-        // pinch-to-zoom still works.
-        settings.setDisplayZoomControls(false);
-
-        // Pin the type scale. WebView otherwise honours the system font size,
-        // and several OEM builds inflate it further, which is what produced the
-        // "some text huge, some tiny" mismatch against Tailwind's rem sizes.
-        settings.setTextZoom(AppSettings.webFontScale(this));
-        appliedFontScale = AppSettings.webFontScale(this);
-        appliedDesktopMode = AppSettings.desktopMode(this);
-
-        webView.setBackgroundColor(0xFF121826);
-        // Cookies (including third-party) are persisted so an OAuth consent page
-        // the dashboard opens inside this WebView keeps its session/state across
-        // the redirect. Without this, providers that round-trip a nonce cookie
-        // reject the callback and the dashboard's own OAuth buttons fail.
-        CookieManager cookieManager = CookieManager.getInstance();
-        cookieManager.setAcceptCookie(true);
-        cookieManager.setAcceptThirdPartyCookies(webView, true);
-        cookieManager.setAcceptFileSchemeCookies(false);
-        webView.setWebViewClient(new DashboardWebViewClient());
         installFloatingBall();
         webView.setVisibility(View.GONE);
 
@@ -468,6 +430,111 @@ public final class MainActivity extends Activity {
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             return routeScheme(Uri.parse(url));
         }
+
+        /**
+         * The renderer died; the gateway must not die with it.
+         *
+         * <p>The default (super) behaviour kills the whole app process, which
+         * takes the OmniRoute gateway down together with a dashboard tab.
+         * The crash report that started this fix was exactly that: a
+         * Chromium-internal CHECK on the Chrome_InProcGp thread brought the
+         * process down with SIGTRAP while the gateway was serving traffic.
+         *
+         * <p>Returning true means the app handles the death itself: the dead
+         * WebView is torn down safely and a fresh one is created, so the
+         * dashboard reloads instead of the whole app dying.
+         */
+        @Override
+        public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+            if (webView != null && webView == view) {
+                Log.w(TAG, "WebView renderer died (crashed=" + detail.didCrash()
+                        + "); rebuilding it instead of killing the process");
+                rebuildWebView();
+            }
+            return true;
+        }
+    }
+
+    /**
+     * Replaces a renderer-dead WebView with a fresh one and reloads the
+     * dashboard.
+     *
+     * <p>destroy() must not run while the view is still attached: it would
+     * throw "This WebView cannot be destroyed" or leave the surface in a
+     * half-dead state that keeps crashing. The dead view is removed from the
+     * hierarchy first, then destroyed.
+     */
+    private void rebuildWebView() {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        ViewGroup parent = (ViewGroup) webView.getParent();
+        int index = parent.indexOfChild(webView);
+        ViewGroup.LayoutParams params = webView.getLayoutParams();
+        parent.removeView(webView);
+        try {
+            webView.destroy();
+        } catch (Exception ignored) {
+            // A renderer-dead WebView can throw from destroy(); the view is
+            // being discarded either way.
+        }
+        webView = new WebView(this);
+        parent.addView(webView, index, params);
+        configureWebView();
+        webView.setVisibility(View.VISIBLE);
+        webView.loadUrl(AppSettings.dashboardUrl(this));
+    }
+
+    /**
+     * Applies every WebView setting the dashboard needs. Called both from
+     * onCreate and after a renderer crash replaces the WebView.
+     */
+    private void configureWebView() {
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(false);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+
+        // The dashboard is a Tailwind layout that switches to a cramped mobile
+        // arrangement below 1024px (sidebar collapses into a drawer, cards stack
+        // and the type scale shrinks). Reporting a desktop viewport keeps the
+        // roomy layout, which is what a phone with a 1080px-wide screen can
+        // actually fit once the viewport is scaled.
+        if (AppSettings.desktopMode(this)) {
+            settings.setUseWideViewPort(true);
+            settings.setLoadWithOverviewMode(true);
+            settings.setUserAgentString(desktopUserAgent(settings.getUserAgentString()));
+        } else {
+            settings.setUseWideViewPort(false);
+            settings.setLoadWithOverviewMode(false);
+        }
+        settings.setSupportZoom(true);
+        settings.setBuiltInZoomControls(true);
+        // Hiding the zoom buttons keeps the overlay from covering the dashboard;
+        // pinch-to-zoom still works.
+        settings.setDisplayZoomControls(false);
+
+        // Pin the type scale. WebView otherwise honours the system font size,
+        // and several OEM builds inflate it further, which is what produced the
+        // "some text huge, some tiny" mismatch against Tailwind's rem sizes.
+        settings.setTextZoom(AppSettings.webFontScale(this));
+        appliedFontScale = AppSettings.webFontScale(this);
+        appliedDesktopMode = AppSettings.desktopMode(this);
+
+        webView.setBackgroundColor(0xFF121826);
+        // Cookies (including third-party) are persisted so an OAuth consent page
+        // the dashboard opens inside this WebView keeps its session/state across
+        // the redirect. Without this, providers that round-trip a nonce cookie
+        // reject the callback and the dashboard's own OAuth buttons fail.
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.setAcceptThirdPartyCookies(webView, true);
+        cookieManager.setAcceptFileSchemeCookies(false);
+        webView.setWebViewClient(new DashboardWebViewClient());
+        webView.setVisibility(View.GONE);
     }
 
     /**
